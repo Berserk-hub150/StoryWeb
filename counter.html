@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="it"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Contatore StoryWeb</title><script defer src="storyweb.js"></script>
+<h1>Contatore StoryWeb</h1>
+<story-app>
+  <button data-story-action="increment">Aggiungi uno</button>
+  <button data-story-action="reset">Azzera</button>
+  <output aria-live="polite"></output>
+  <script type="text/x-storyweb">
+this story starts softly
+read input
+value 1 lines below
+| "increment"
+equals
+recall if ylgent
+read input
+value 1 lines below
+| "reset"
+equals
+recall if ylslow
+load count
+say
+this story ends softly
+the chapter begins gently
+load count
+value 1 lines below
+| 1
+add
+save count
+the chapter ends gently
+the chapter begins slowly
+value 1 lines below
+| 0
+save count
+the chapter ends slowly
+  </script>
+</story-app></html>

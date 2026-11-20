@@ -1,8 +1,8 @@
-/* StoryWeb 0.1 | Apache-2.0 */
+/* StoryWeb 0.2 | Apache-2.0 */
 (() => {
   "use strict";
   const signature = name => [...name].sort().join("");
-  function run(source, input = "") {
+  function evaluate(source, input, memory) {
     const lines = source.replace(/\r\n?/g, "\n").split("\n").map(s => s.trim());
     const stack = [], output = [], chapters = new Map();
     let story, block;
@@ -24,7 +24,7 @@
       } else if (block && line === (block.chapter ? "the chapter ends " : "this story ends ") + block.name) {
         block = null;
       } else if (block) {
-        if (!/^(read input|add|multiply|join|say|value [1-9][0-9]* lines (above|below)|recall [a-z]+)$/.test(line)) fail(i, "unknown instruction");
+        if (!/^(read input|equals|(?:save|load) [a-z]+|add|multiply|join|say|value [1-9][0-9]* lines (above|below)|recall(?: if)? [a-z]+)$/.test(line)) fail(i, "unknown instruction");
         block.body.push(i);
       } else fail(i, "expected block");
     }
@@ -45,9 +45,18 @@
           stack.push(v);
         } else if (op === "read input") stack.push(String(input));
         else if (op === "say") output.push(String(pop()));
+        else if (op.startsWith("save ")) memory.set(op.slice(5), pop());
+        else if (op.startsWith("load ")) stack.push(memory.get(op.slice(5)) ?? 0);
+        else if (op === "equals") stack.push(pop() === pop() ? 1 : 0);
         else if (op.startsWith("recall ")) {
-          const next = chapters.get(signature(op.slice(7)));
-          if (!next || next.name === op.slice(7)) fail(i, "expected a distinct chapter anagram");
+          if (op.startsWith("recall if ")) {
+            const flag = pop();
+            if (flag !== 0 && flag !== 1) fail(i, "expected 0 or 1");
+            if (!flag) continue;
+          }
+          const alias = op.split(" ").pop();
+          const next = chapters.get(signature(alias));
+          if (!next || next.name === alias) fail(i, "expected a distinct chapter anagram");
           execute(next, depth + 1);
         } else {
           const right = pop(), left = pop();
@@ -66,9 +75,37 @@
     execute(story, 0);
     return output.join("\n");
   }
-  if (typeof module !== "undefined") module.exports = {run};
+  function createSession() {
+    let memory = new Map();
+    return Object.freeze({run(source, input = "") {
+      const draft = new Map(memory);
+      const result = evaluate(source, input, draft);
+      memory = draft;
+      return result;
+    }});
+  }
+  function run(source, input = "") { return createSession().run(source, input); }
+  if (typeof module !== "undefined") module.exports = {run, createSession};
   if (typeof window === "undefined") return;
-  window.StoryWeb = Object.freeze({run});
+  window.StoryWeb = Object.freeze({run, createSession});
+  customElements.define("story-app", class extends HTMLElement {
+    #session = createSession();
+    #render(action) {
+      const output = this.querySelector("output");
+      try {
+        output.textContent = this.#session.run(this.querySelector('script[type="text/x-storyweb"]').textContent, action);
+      } catch (error) { output.textContent = error.message; }
+    }
+    #click = event => {
+      const button = event.target.closest?.("button[data-story-action]");
+      if (button?.closest("story-app") === this) this.#render(button.dataset.storyAction);
+    };
+    connectedCallback() {
+      this.addEventListener("click", this.#click);
+      if (this.querySelector("output")) this.#render("");
+    }
+    disconnectedCallback() { this.removeEventListener("click", this.#click); }
+  });
   customElements.define("story-web", class extends HTMLElement {
     connectedCallback() {
       if (this.shadowRoot) return;
