@@ -1,0 +1,21 @@
+<!doctype html><html lang="it"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>StoryWeb · laboratorio</title>
+<style>body{max-width:50rem;margin:8vh auto;padding:0 1rem;background:#101923;color:#e9f2ef;font:18px system-ui}h1{color:#a7f3cc}textarea{box-sizing:border-box;width:100%;height:19rem;background:#182735;color:white;padding:1rem;font:16px monospace}story-web{display:block;margin:1rem 0}</style>
+<h1>StoryWeb</h1><p>Scrivi un nome nel campo Input e premi Run story. Puoi anche modificare il programma.</p>
+<label for="editor">Programma</label><textarea id="editor" spellcheck="false"></textarea>
+<story-web><script type="text/x-storyweb">this story starts softly
+value 1 lines below
+| "Ciao, "
+read input
+join
+recall ylgent
+this story ends softly
+
+the chapter begins gently
+say
+the chapter ends gently</script></story-web>
+<script src="storyweb.js"></script><script>
+const source = document.querySelector("story-web script");
+const editor = document.querySelector("textarea");
+editor.value = source.textContent;
+editor.oninput = () => { source.textContent = editor.value; };
+</script></html>
